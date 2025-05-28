@@ -1,0 +1,160 @@
+using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
+
+public class EducationalVentilator : MonoBehaviour
+{
+    [Header("المؤشرات الحيوية")]
+    public TMP_Text heartRateText;      // معدل ضربات القلب
+    public TMP_Text spo2Text;          // تشبع الأكسجين
+    public TMP_Text respRateText;      // معدل التنفس
+    public TMP_Text bloodPressureText; // ضغط الدم
+    
+    [Header("إعدادات جهاز التنفس")]
+    public TMP_Text tidalVolumeText;   // حجم المد والجزر
+    public TMP_Text peepText;          // ضغط نهاية الزفير
+    public TMP_Text fio2Text;          // تركيز الأكسجين
+    
+    [Header("حالة المريض")]
+    public TMP_Text statusText;        // حالة المريض
+    public Image statusIndicator;      // مؤشر لوني
+    
+    [Header("إعدادات المحاكاة")]
+    public float updateInterval = 2f;  // معدل التحديث
+    public bool autoMode = true;       // وضع التلقائي
+    
+    // القيم الطبيعية الافتراضية
+    private float currentHR = 75f;     // معدل ضربات القلب
+    private float currentSpO2 = 98f;   // تشبع الأكسجين
+    private float currentRR = 16f;     // معدل التنفس
+    private float currentBP_S = 120f;  // ضغط الدم (انقباضي)
+    private float currentBP_D = 80f;   // ضغط الدم (انبساطي)
+    private float currentTV = 500f;    // حجم المد والجزر (ml)
+    private float currentPEEP = 5f;    // ضغط نهاية الزفير (cmH2O)
+    private float currentFiO2 = 40f;   // تركيز الأكسجين (%)
+    
+    // ألوان المؤشر
+    private Color normalColor = new Color(0.2f, 0.8f, 0.2f); // أخضر
+    private Color warningColor = Color.yellow;                // أصفر
+    private Color dangerColor = Color.red;                    // أحمر
+
+    void Start()
+    {
+        // بدء التحديث التلقائي
+        if(autoMode) InvokeRepeating("UpdateVitals", 0f, updateInterval);
+        UpdateDisplay();
+    }
+
+    void UpdateVitals()
+    {
+        // تغييرات عشوائية طفيفة لمحاكاة الواقع
+        currentHR += Random.Range(-2f, 2f);
+        currentSpO2 += Random.Range(-0.5f, 0.5f);
+        currentRR += Random.Range(-1f, 1f);
+        currentBP_S += Random.Range(-3f, 3f);
+        currentBP_D += Random.Range(-2f, 2f);
+        
+        // التأكد من بقاء القيم في نطاقات واقعية
+        ClampValues();
+        UpdateDisplay();
+    }
+
+    void ClampValues()
+    {
+        currentHR = Mathf.Clamp(currentHR, 50f, 140f);
+        currentSpO2 = Mathf.Clamp(currentSpO2, 85f, 100f);
+        currentRR = Mathf.Clamp(currentRR, 10f, 30f);
+        currentBP_S = Mathf.Clamp(currentBP_S, 90f, 160f);
+        currentBP_D = Mathf.Clamp(currentBP_D, 60f, 100f);
+        currentTV = Mathf.Clamp(currentTV, 300f, 600f);
+        currentPEEP = Mathf.Clamp(currentPEEP, 0f, 10f);
+        currentFiO2 = Mathf.Clamp(currentFiO2, 21f, 100f);
+    }
+
+    void UpdateDisplay()
+    {
+        // تحديث المؤشرات الحيوية
+        heartRateText.text = "معدل النبض: " + Mathf.Round(currentHR) + " نبضة/دقيقة";
+        spo2Text.text = "تشبع الأكسجين: " + currentSpO2.ToString("F1") + "%";
+        respRateText.text = "معدل التنفس: " + Mathf.Round(currentRR) + " نفس/دقيقة";
+        bloodPressureText.text = "ضغط الدم: " + Mathf.Round(currentBP_S) + "/" + Mathf.Round(currentBP_D) + " mmHg";
+        
+        // تحديث إعدادات الجهاز
+        tidalVolumeText.text = "حجم المد: " + Mathf.Round(currentTV) + " ml";
+        peepText.text = "PEEP: " + currentPEEP.ToString("F1") + " cmH2O";
+        fio2Text.text = "FiO₂: " + Mathf.Round(currentFiO2) + "%";
+        
+        // تحديث حالة المريض
+        UpdatePatientStatus();
+    }
+
+    void UpdatePatientStatus()
+    {
+        if(currentSpO2 < 90f || currentHR > 120f || currentRR > 25f || currentBP_S > 150f)
+        {
+            statusText.text = "حالة حرجة!";
+            statusIndicator.color = dangerColor;
+        }
+        else if(currentSpO2 < 94f || currentHR > 100f || currentRR > 20f || currentBP_S > 140f)
+        {
+            statusText.text = "حالة غير مستقرة";
+            statusIndicator.color = warningColor;
+        }
+        else
+        {
+            statusText.text = "حالة مستقرة";
+            statusIndicator.color = normalColor;
+        }
+    }
+
+    // === وظائف التحكم اليدوي ===
+    
+    public void AdjustFiO2(float change)
+    {
+        currentFiO2 += change;
+        ClampValues();
+        UpdateDisplay();
+    }
+    
+    public void AdjustPEEP(float change)
+    {
+        currentPEEP += change;
+        ClampValues();
+        UpdateDisplay();
+    }
+    
+    public void AdjustTidalVolume(float change)
+    {
+        currentTV += change;
+        ClampValues();
+        UpdateDisplay();
+    }
+    
+    public void SimulateLowOxygen()
+    {
+        currentSpO2 = 85f;
+        currentHR = 110f;
+        currentRR = 22f;
+        UpdateDisplay();
+    }
+    
+    public void ResetToNormal()
+    {
+        currentHR = 75f;
+        currentSpO2 = 98f;
+        currentRR = 16f;
+        currentBP_S = 120f;
+        currentBP_D = 80f;
+        currentTV = 500f;
+        currentPEEP = 5f;
+        currentFiO2 = 40f;
+        UpdateDisplay();
+    }
+    
+    public void ToggleAutoMode()
+    {
+        autoMode = !autoMode;
+        if(autoMode) InvokeRepeating("UpdateVitals", 0f, updateInterval);
+        else CancelInvoke("UpdateVitals");
+    }
+}
