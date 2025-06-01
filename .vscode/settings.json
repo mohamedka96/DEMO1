@@ -56,5 +56,5 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "DEMO-main.sln"
+    "dotnet.defaultSolution": "DEMO1-main.sln"
 }
